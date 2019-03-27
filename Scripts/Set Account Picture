@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# Get logged in User
+loggedInUser=`python -c 'from SystemConfiguration import SCDynamicStoreCopyConsoleUser; import sys; username = (SCDynamicStoreCopyConsoleUser(None, None, None) or [None])[0]; username = [username,""][username in [u"loginwindow", None, u""]]; sys.stdout.write(username + "\n");'`
+
+# Delete any photo currently in use.
+dscl . delete /Users/$loggedInUser jpegphoto
+sleep 1
+
+# Delete file path
+dscl . delete /Users/$loggedInUser Picture
+sleep 1
+
+# Set new Icon
+dscl . create /Users/$loggedInUser Picture "/Library/User Pictures/example.tif"
