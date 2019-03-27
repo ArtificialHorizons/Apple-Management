@@ -1,0 +1,14 @@
+#!/bin/sh
+
+serialNumber=$( ioreg -c IOPlatformExpertDevice -d 2 | awk -F\" '/IOPlatformSerialNumber/{print $(NF-1)}' )
+
+if [[ ${serialNumber} != "" ]]; then
+    echo "Serial Number is $serialNumber, setting ComputerName/LocalHostName/Hostname."
+    /usr/sbin/scutil --set ComputerName ${serialNumber}
+    /usr/sbin/scutil --set LocalHostName ${serialNumber}
+    /usr/sbin/scutil --set HostName ${serialNumber}
+else
+    echo "Serial Number is blank"
+fi
+
+exit 0
