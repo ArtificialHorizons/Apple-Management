@@ -1,0 +1,33 @@
+#!/bin/sh
+loggedInUser=`python -c 'from SystemConfiguration import SCDynamicStoreCopyConsoleUser; import sys; username = (SCDynamicStoreCopyConsoleUser(None, None, None) or [None])[0]; username = [username,""][username in [u"loginwindow", None, u""]]; sys.stdout.write(username + "\n");'`
+echo "Running for user ${loggedInUser}"
+
+# Some installs of OS X seem to be missing PyObjC but others done.
+# Will try and install to ensure the rest of the script does not fail.
+easy_install -pip
+su ${loggedInUser} -c 'pip install pyobjc --user --quiet'
+
+# Apples recommended method for working out the currently logged in user. 
+# Using Python to call the ObjC system call that will return the actual user even if run as root.
+# https://developer.apple.com/library/content/qa/qa1133/_index.html
+loggedInUser=`python -c 'from SystemConfiguration import SCDynamicStoreCopyConsoleUser; import sys; username = (SCDynamicStoreCopyConsoleUser(None, None, None) or [None])[0]; username = [username,""][username in [u"loginwindow", None, u""]]; sys.stdout.write(username + "\n");'`
+
+# Define the contents of a python script here that sets Outlook
+# as the default client to Send as E-Mail in other apps, as well
+# as open .ics calendar files and .vcard contact files.
+py_script="
+import os
+import sys
+
+from LaunchServices import *
+
+##Set default application for 'mailto://' scheme
+LSSetDefaultHandlerForURLScheme('mailto', 'com.microsoft.Outlook')
+LSSetDefaultRoleHandlerForContentType('com.apple.mail.email', 0x00000002, 'com.microsoft.Outlook')
+LSSetDefaultRoleHandlerForContentType('public.vcard', 0x00000002, 'com.microsoft.Outlook')
+LSSetDefaultRoleHandlerForContentType('com.apple.ical.ics', 0x00000002, 'com.microsoft.Outlook')
+LSSetDefaultRoleHandlerForContentType('com.microsoft.outlook16.icalendar', 0x00000002, 'com.microsoft.Outlook')
+"
+
+# Run the above python as the currently logged in console user.
+sudo -u ${loggedInUser} -H python -c "$py_script"
