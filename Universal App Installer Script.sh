@@ -1,0 +1,59 @@
+#!/bin/sh
+
+# -------------------------------------------------------------------------------------
+#
+# Universal App Installer Script
+#
+# -------------------------------------------------------------------------------------
+#
+# DESCRIPTION
+#
+# Automatically download and install nearly any app from a direct download link
+# App can be packaged as .dmg, .pkg, or .zip, and have either the .app or a .pkg inside
+#
+# -------------------------------------------------------------------------------------
+
+# ADD THE DIRECT DOWNLOAD LINK FOR YOUR APP HERE:
+
+DownloadURL="https://dl.google.com/chrome/mac/stable/GGRO/googlechrome.dmg"
+
+# -------------------------------------------------------------------------------------
+
+# LEAVE THIS CODE ALONE:
+
+# Create directory /tmp/jamf, continue if directory already exists
+mkdir /tmp/jamf || :
+
+# Change directory to /tmp/jamf
+cd /tmp/jamf
+
+#Download installer container into /tmp/jamf
+# -O downloads file without changing its name
+curl $DownloadURL -O -L
+
+# If container is a .dmg:
+# Mount installer container
+# -nobrowse to hide the mounted .dmg
+# -noverify to skip .dmg verification
+# -mountpoint to specify mount point
+yes | hdiutil attach /tmp/jamf/*.dmg -nobrowse -noverify -mountpoint /tmp/jamf/mount ||
+# Else if container is a .pkg
+# Run installer package with the boot drive as the destination
+installer -pkg /tmp/jamf/*.pkg -target / ||
+# Else if container is anything else, presumably a zip file:
+# Unzip installer container and place contents into /tmp/jamf/mount, continue on error
+unzip /tmp/jamf/* -d /tmp/jamf/mount || :
+
+# If contents is installer .pkg:
+# Run installer package with the boot drive as the destination
+installer -pkg /tmp/jamf/mount/*.pkg -target / ||
+# Else if contents is .app:
+# Copy the .app file from the installer container to /Applications
+# Preserve all file attributes and ACLs
+cp -pPR /tmp/jamf/mount/*.app /Applications || :
+
+# Unmount the secondary installation folder, continue on error
+hdiutil detach /tmp/jamf/mount || :
+
+# Delete the main installation folder
+rm -r /tmp/jamf
